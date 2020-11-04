@@ -1,0 +1,44 @@
+server:
+  port: 23456
+  servlet:
+    context-path: /monitor
+
+    
+spring: 
+  datasource:
+    url: jdbc:h2:mem:h2_monitor;DB_CLOSE_DELAY=-1;DB_CLOSE_ON_EXIT=FALSE
+    platform: h2
+    username: sa
+    password:
+    driverClassName: org.h2.Driver
+   
+  jpa: 
+    database-platform: org.hibernate.dialect.H2Dialect
+    hibernate:
+      ddl-auto: update
+    properties:
+      hibernate:
+        show_sql: false
+        use_sql_comments: false
+        format_sql: true
+  h2:
+    console:
+      enabled: true
+      path: /console
+      settings:
+        trace: false
+        web-allow-others: false
+        
+logging:
+  file: 
+    name: logs/monitor.log
+    max-size: 128MB
+    max-history: 7
+  level:
+    root: WARN
+    org.springframework: INFO
+    org.hibernate: INFO
+    com.system: INFO
+  pattern:
+    console: '%d{yyyy-MM-dd HH:mm:ss.SSS} [%thread] %-5level %logger{64} - %msg%n'
+    file: '%d{yyyy-MM-dd HH:mm:ss.SSS} [%thread] %-5level %logger{64} - %msg%n'

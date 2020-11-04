@@ -1,0 +1,419 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta http-equiv="X-UA-Compatible" content="IE=edge">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>The System Monitor</title>
+
+<!-- Bootstrap -->
+<link href="css/bootstrap.min.css" rel="stylesheet">
+<link href="css/datetimepicker.css" rel="stylesheet">
+<style type="text/css">
+loader{
+	margin: 0 auto;
+}
+</style>
+<script src="./js/config.js"></script>
+<script src="js/jquery.min.js"></script>
+<script src="js/bootstrap.min.js"></script>
+<script src="js/sweetalert.min.js"></script>
+<script src="js/bootstrap-datetimepicker.min.js"></script>
+<script src="js/echarts.min.js"></script>
+<script type="text/javascript">
+function randomString(){
+    var text = "";
+    var possible = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789";
+    for( var i=0; i < 5; i++ ){
+        text += possible.charAt(Math.floor(Math.random() * possible.length));
+    }
+    return text;
+}
+	function connectWebsocket(callback) {
+		var protocol = window.location.protocol == 'http:' ? 'ws:' : 'wss:';
+		var target = protocol + '//' + window.location.host + CONTEXT
+				+ '/ws/' + randomString();
+		console.log('Websocket connect: ' + target)
+		var ws = new WebSocket(target);
+		ws.onopen = function() {
+			console.log('Info: WebSocket connection opened.');
+			callback && callback();
+		};
+		ws.onmessage = function(event) {
+			append(event.data);
+		};
+		ws.onclose = function() {
+			console.log('Info: WebSocket connection closed.');
+			reconnectId = setTimeout("connectWebsocket()", 2000);
+			console.log("Start to reconnect...");
+		};
+		ws.onerror = function(event) {
+			console.log("Websocket connection error");
+		}
+	}
+
+	function disconnect() {
+		if (ws != null) {
+			ws.close();
+			ws = null;
+		}
+	}
+</script>
+</head>
+<body>
+
+
+	<div class="container">
+		<div class="panel panel-default">
+			<div class="panel-heading">
+				<div class="panel-title">
+					<h3>The System Monitor</h3>
+				</div>
+			</div>
+		</div>
+		<div class="row clearfix">
+			<div class="col-md-12 column">
+				<div class="tabbable" id="tabs-927937">
+					<ul class="nav nav-tabs">
+						<li class="active"><a href="#panel-982530" data-toggle="tab"><h4>Realtime</h4></a>
+						</li>
+						<li><a href="#panel-647682" data-toggle="tab"><h4>Search</h4></a>
+						</li>
+					</ul>
+					<div class="tab-content">
+						<div class="tab-pane active" id="panel-982530">
+							<div class="col-md-12 column" style="margin-top: 20px;">
+								<div class="form-horizontal" role="form">
+									<div class="form-group">
+										<label for="serverIp" class="col-sm-3 control-label">进程名(默认JAVA):</label>
+										<div class="col-sm-2">
+											<input type="text" class="form-control" id="processName" value="java"
+												placeholder="进程名字" />
+										</div>
+										<label for="serverPort" class="col-sm-2 control-label">监控间隔(秒):</label>
+										<div class="col-sm-2">
+											<input type="text" class="form-control" id="intervalSeconds"
+												onkeyup="value=value.replace(/^(0+)|[^\d]+/g,'')"
+												placeholder="请监控间隔多少秒" 
+												value="15"/>
+										</div>
+										<div class="col-sm-2">
+											<button class="btn btn-primary" id="resetBtn">Reset</button>
+										</div>
+									</div>
+								</div>
+							</div>
+							<div class="col-md-12 column" style="margin-top: 10px;">
+								<div id="realtimeCpuChart" style="width: 100%; height: 300px;"></div>
+							</div>
+							<div class="col-md-12 column" style="margin-top: 10px;">
+								<div id="realtimeMemChart" style="width: 100%; height: 300px;"></div>
+							</div>
+						</div>
+						<div class="tab-pane" id="panel-647682">
+							<div class="col-md-12 column" style="margin-top: 20px;">
+								<div class="form-horizontal" role="form">
+									<div class="form-group">
+										<label for="serverIp" class="col-sm-1 control-label">进程名:</label>
+										<div class="col-sm-2">
+											<input type="text" class="form-control" id="pname" value="java"
+												placeholder="进程名字" />
+										</div>
+										<label for="tnumber" class="col-sm-1 control-label">开始时间:</label>
+										<div class="col-sm-2">
+											<input type="text" class="form-control" id="starttime" readonly
+												placeholder="请输入开始时间" />
+										</div>
+										<label for="tnumber" class="col-sm-1 control-label">结束时间:</label>
+										<div class="col-sm-2">
+											<input type="text" class="form-control" id="endtime" readonly
+												placeholder="请输入开始时间" />
+										</div>
+										<button class="col-sm-2 btn btn-primary" id="searchBtn">Search</button>
+									</div>
+								</div>
+							</div>
+							<div class="col-md-12 column" style="margin-top: 10px;">
+								<div id="searchCpuChart" style="width: 100%; height: 300px;"></div>
+							</div>
+							<div class="col-md-12 column" style="margin-top: 10px;">
+								<div id="searchMemChart" style="width: 100%; height: 300px;"></div>
+							</div>
+						</div>
+					</div>
+				</div>
+			</div>
+		</div>
+	</div>
+
+	<div class="modal fade" id="myModal" tabindex="-1" role="dialog" aria-labelledby="myModalLabel" aria-hidden="true">
+		<div class="modal-dialog">
+	        <div class="modal-content">
+	        <div class="modal-body" style="text-align:center;">
+	   			<img alt="" src="images/loader.gif"/>
+	   		</div>
+	   		</div>
+		</div>
+	</div>
+	<button id="button" style="display:none;"></button>
+</body>
+<script type="text/javascript">
+	$('#starttime').datetimepicker({
+	    format: 'yyyy-mm-dd hh:ii',
+	    autoclose: true
+	});
+	
+	$('#endtime').datetimepicker({
+	    format: 'yyyy-mm-dd hh:ii',
+	   	autoclose: true
+	});
+	
+	connectWebsocket();
+	var lastProcessName = $('#processName').val();
+	var changedName = false;
+	$('#resetBtn').click(function(){
+		var name = $('#processName').val();
+		var interval = $("#intervalSeconds").val();
+		if (name.length == 0) {
+			alert("Please input process name");
+			$('#processName').focus();
+			return false;
+		}
+		if (interval.length == 0) {
+			alert("Please input interval seconds");
+			$("#intervalSeconds").focus();
+			return false;
+		}
+		
+		$.ajax({
+			type : 'POST',
+			url : URL_PREFIX + '/params?processName=' + encodeURI(name) + "&intervalSeconds=" + interval,
+			contentType : 'application/json',
+			success : function(data) {
+				changedName = lastProcessName != name;
+				lastProcessName = name;
+			},
+			error : function(XMLHttpRequest, textStatus, errorThrown) {
+				console.log(errorThrown);
+			}
+		});
+	});
+	
+	$('#searchBtn').click(function() {
+		if(!validate()){
+			return;
+		}
+		var name = $('#pname').val();
+		var starttime = $('#starttime').val() + ":00";
+		var endtime = $('#endtime').val() + ":00";
+		var query = "processName="+ encodeURI(name) + "&starttime=" + encodeURI(starttime) + "&endtime=" + encodeURI(endtime);
+		$.ajax({
+			type : 'GET',
+			url : URL_PREFIX + '?' + query,
+			contentType : 'application/json',
+			success : function(data) {
+				console.log(data);
+				displaySearch(data);
+			},
+			error : function(XMLHttpRequest, textStatus, errorThrown) {
+				console.log(errorThrown);
+			}
+		});
+	});
+	
+	function validate() {
+		var name = $('#pname').val();
+		var starttime = $('#starttime').val();
+		var endtime = $('#endtime').val();
+		if (name.length == 0) {
+			alert("Please input process name");
+			return false;
+		}
+
+		if (starttime.length == 0) {
+			alert("Please input start time");
+			return false;
+		}
+
+		if (endtime.length == 0) {
+			alert("Please input end time.");
+			return false;
+		}
+		return true;
+	}
+	
+	
+	//function append(data) {
+		//$('#messageNumberChart').html('');
+		//$('#rateChart').html('');
+	function buildCpuOption(){
+		return {
+			title : {
+				text : 'CPU Status'
+			},
+			tooltip: {
+		        trigger: 'axis'
+		    },
+		    legend: {
+		        data: ['CPU Status']
+		    },
+		    toolbox: {
+		        feature: {
+		            saveAsImage: {}
+		        }
+		    },
+			xAxis : {
+				type : 'category',
+				boundaryGap: false,
+				data : []
+			},
+			yAxis : {
+				type : 'value'
+			},
+			series : [ {
+					name: 'CPU Percent',
+					data : [],
+					type : 'line',
+					areaStyle:{}
+				}
+			]
+		};
+	}
+	
+	function buildMemOption(){
+		return {
+				title : {
+					text : 'Memory Status'
+				},
+				tooltip: {
+			        trigger: 'axis'
+			    },
+			    legend: {
+			        data: ['Used', 'Used Percent', 'Free', 'Free Percent', 'Process Percent']
+			    },
+			    toolbox: {
+			        feature: {
+			            saveAsImage: {}
+			        }
+			    },
+				xAxis : {
+					type : 'category',
+					data : []
+				},
+				yAxis : [
+					{
+						type : 'value',
+						name: 'Memory',
+					},
+					{
+						type : 'value',
+						name: 'Percent',
+					}
+				],
+				series : [ 
+					{
+						name: 'Used',
+						data : [],
+						type : 'line'
+					},
+					{
+						name: 'Used Percent',
+						data : [],
+						yAxisIndex: 1, 
+						type : 'line'
+					},
+					{
+						name: 'Free',
+						data : [],
+						type : 'line'
+					},
+					{
+						name: 'Free Percent',
+						data : [],
+						yAxisIndex: 1, 
+						type : 'line'
+					},
+					{
+						name: 'Process Percent',
+						data : [],
+						yAxisIndex: 1, 
+						type : 'line'
+					}
+				]
+			};
+		}
+		
+	var realtimeCpuOptoin = buildCpuOption();
+	var realtimeMemOption = buildMemOption();
+	var LIMIT = 200;
+	function append(data) {
+		if(changedName){
+			realtimeCpuOptoin.series[0].data = [];
+			realtimeCpuOptoin.xAxis.data = [];
+			
+			realtimeMemOption.series[0].data = [];
+			realtimeMemOption.series[1].data = [];
+			realtimeMemOption.series[2].data = [];
+			realtimeMemOption.series[3].data = [];
+			realtimeMemOption.series[4].data = [];
+			realtimeMemOption.xAxis.data = [];
+		}
+		changedName = false;
+		
+		data = JSON.parse(data);
+		realtimeCpuOptoin.title.text = 'CPU Status( '+data.processorNumber+' )'
+		realtimeCpuOptoin.series[0].data.push(data.cpuPercent);
+		
+		var cpuMxData = realtimeCpuOptoin.xAxis.data;
+		if (cpuMxData.length > LIMIT) {
+			cpuMxData.shift();
+		}
+		cpuMxData.push(data.createTime);
+		
+		var realtimeCpuChart = echarts.init(document.getElementById('realtimeCpuChart'));
+		realtimeCpuChart.setOption(realtimeCpuOptoin);
+		
+		realtimeMemOption.title.text = 'Memory Status(Total: '+data.memoryTotal+')';
+		realtimeMemOption.series[0].data.push(data.memoryUsed);
+		realtimeMemOption.series[1].data.push((data.memoryUsed/data.memoryTotal * 100.0));
+		realtimeMemOption.series[2].data.push(data.memoryFree);
+		realtimeMemOption.series[3].data.push((data.memoryFree/data.memoryTotal * 100.0));
+		realtimeMemOption.series[4].data.push(data.memoryProcessPercent);
+		
+		var memMxData = realtimeMemOption.xAxis.data;
+		if (memMxData.length > LIMIT) {
+			memMxData.shift();
+		}
+		memMxData.push(data.createTime);
+		
+		var realtimeMemChart = echarts.init(document.getElementById('realtimeMemChart'));
+		realtimeMemChart.setOption(realtimeMemOption);
+	}
+	
+	function displaySearch(data){
+		var cpuOption = buildCpuOption();
+		var memOption = buildMemOption();
+		if(data.length >0 ){
+			cpuOption.title.text = 'CPU Status( '+data[0].processorNumber+' )'
+			memOption.title.text = 'Memory Status(Total: '+data[0].memoryTotal+')';
+		}
+		$(data).each(function(i, e){
+			cpuOption.series[0].data.push(e.cpuPercent);
+			cpuOption.xAxis.data.push(e.createTime);
+			
+			memOption.series[0].data.push(e.memoryUsed);
+			memOption.series[1].data.push((e.memoryUsed/e.memoryTotal * 100.0));
+			memOption.series[2].data.push(e.memoryFree);
+			memOption.series[3].data.push((e.memoryFree/e.memoryTotal * 100.0));
+			memOption.series[4].data.push(e.memoryProcessPercent);
+			memOption.xAxis.data.push(e.createTime);
+		});
+		var cpuChart = echarts.init(document.getElementById('searchCpuChart'));
+		cpuChart.setOption(cpuOption);
+		
+		var memChart = echarts.init(document.getElementById('searchMemChart'));
+		memChart.setOption(memOption);
+	}
+	
+</script>
+</html>
