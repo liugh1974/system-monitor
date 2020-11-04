@@ -11,4 +11,4 @@ linux system monitor
 页面由Echarts图表显示。
 可以显示实时的监控数据，以及历史数据的查询显示功能。
 
-![显示图表示例](https://github.com/liugh1974/system-monitor/blob/main/images/example.png)
+![显示图表示例](https://raw.githubusercontent.com/liugh1974/system-monitor/main/images/example.png)
